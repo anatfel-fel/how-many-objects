@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סוביטציה - כמה פריטים?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap');
+        
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: #FDFBF7;
+        }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-zoom-in { animation: zoomIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.4s ease-out; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(1rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-6">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg transform rotate-3">
+                <div class="w-4 h-4 bg-white rounded-full"></div>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black text-gray-700 tracking-tight">כמה פריטים?</h1>
+        </div>
+        <button id="fullscreenBtn" class="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:bg-white rounded-xl transition-all shadow-sm text-gray-700 font-medium">
+            <i data-lucide="maximize" class="w-4 h-4"></i>
+            <span class="hidden sm:inline text-sm">מסך מלא</span>
+        </button>
+    </header>
+
+    <!-- Main Container -->
+    <main id="appContainer" class="w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl border border-orange-100 overflow-hidden flex flex-col min-h-[550px] transition-all relative">
+        
+        <!-- START SCREEN -->
+        <div id="startScreen" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-8 animate-fade-in">
+            <div class="space-y-4">
+                <h2 class="text-3xl md:text-5xl font-black text-orange-600">בואו נתרגל סוביטציה!</h2>
+                <p class="text-xl text-gray-500 max-w-lg mx-auto leading-relaxed font-medium">
+                    הביטו במערך הפריטים למשך הזמן שתבחרו. <br>
+                    נסו לזהות את הכמות לפי הקבוצות.
+                </p>
+            </div>
+
+            <div class="flex flex-col items-center gap-4">
+                <div class="flex items-center gap-2 text-gray-600 font-bold mb-1">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    <span>בחר זמן צפייה:</span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button onclick="setDuration(5)" class="duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-white border-orange-100 text-orange-400 hover:bg-orange-50" data-val="5">5 שנ'</button>
+                    <button onclick="setDuration(10)" class="duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-white border-orange-100 text-orange-400 hover:bg-orange-50" data-val="10">10 שנ'</button>
+                    <button onclick="setDuration(15)" class="duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-orange-500 border-orange-600 text-white shadow-md transform scale-105" data-val="15">15 שנ'</button>
+                    <button onclick="setDuration(30)" class="duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-white border-orange-100 text-orange-400 hover:bg-orange-50" data-val="30">30 שנ'</button>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="flex items-center gap-4 bg-orange-500 hover:bg-orange-600 text-white px-12 py-6 rounded-3xl text-2xl font-black transition-all transform hover:scale-105 shadow-[0_10px_0_rgb(234,88,12)] active:shadow-none active:translate-y-2">
+                <i data-lucide="play" class="w-8 h-8 fill-current"></i>
+                אני מוכן!
+            </button>
+        </div>
+
+        <!-- GAME/SHOWING SCREEN -->
+        <div id="showingScreen" class="hidden flex-1 flex flex-col p-6 space-y-6">
+            <div class="flex items-center gap-6">
+                <div class="flex-1 bg-gray-100 h-5 rounded-full p-1 border border-gray-200">
+                    <div id="progressBar" class="bg-gradient-to-l from-orange-400 to-orange-600 h-full rounded-full transition-all duration-1000 ease-linear shadow-sm" style="width: 100%"></div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <span id="timerText" class="text-3xl font-black text-orange-600 leading-none">15</span>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">שניות</span>
+                </div>
+            </div>
+            <div id="canvasContainer" class="flex-1 flex items-center justify-center"></div>
+            <button onclick="resetToStart()" class="self-center flex items-center gap-2 text-gray-400 hover:text-orange-500 transition-colors font-bold text-sm">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                התחל מחדש
+            </button>
+        </div>
+
+        <!-- ASKING SCREEN -->
+        <div id="askingScreen" class="hidden flex-1 flex flex-col p-8 space-y-8 animate-slide-up">
+            <div class="text-center">
+                <h2 class="text-3xl font-black text-gray-700">כמה פריטים ראית?</h2>
+            </div>
+            <div class="flex flex-col items-center gap-8">
+                <input id="answerInput" type="number" inputmode="numeric" class="w-40 h-24 text-center text-5xl font-black border-4 border-orange-200 bg-orange-50 rounded-[2rem] outline-none focus:border-orange-500 focus:shadow-xl transition-all" placeholder="?">
+                
+                <div id="feedbackBox" class="hidden flex items-center gap-4 px-8 py-4 rounded-2xl border-2"></div>
+
+                <div class="flex flex-wrap justify-center gap-4 w-full">
+                    <button onclick="checkAnswer()" id="checkBtn" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-2xl text-2xl font-black shadow-[0_6px_0_rgb(234,88,12)] active:shadow-none active:translate-y-1 transition-all">בדיקה</button>
+                    <button onclick="reviewBoard()" class="bg-white border-2 border-blue-200 hover:bg-blue-50 text-blue-600 px-8 py-5 rounded-2xl text-xl font-black flex items-center gap-3 transition-all shadow-sm">
+                        <i data-lucide="eye" class="w-6 h-6"></i>
+                        הצג שוב
+                    </button>
+                </div>
+            </div>
+            <div class="pt-8 mt-auto border-t border-gray-100 flex justify-between items-center">
+                <button onclick="resetToStart()" class="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-500 px-6 py-3 rounded-xl transition-all font-bold">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    חזרה למסך הבית
+                </button>
+                <button id="nextLevelBtn" onclick="startGame()" class="hidden flex items-center gap-3 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-2xl transition-all font-black shadow-lg shadow-green-200">
+                    למערך חדש
+                    <i data-lucide="arrow-right" class="w-5 h-5 rotate-180"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- REVIEW SCREEN -->
+        <div id="reviewScreen" class="hidden flex-1 flex flex-col p-6 space-y-6">
+            <div id="reviewCanvasContainer" class="flex-1 flex items-center justify-center"></div>
+            <div class="flex flex-wrap justify-center gap-4 py-4">
+                <button onclick="backToAsking()" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-2xl text-xl font-black shadow-lg flex items-center gap-3">חזרה לשאלה</button>
+                <button onclick="resetToStart()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-8 py-5 rounded-2xl text-xl font-black">התחל מחדש</button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-8 text-gray-400 font-bold text-sm tracking-wide">
+        למידה דרך חוויה - ד"ר ענת פלדמן
+    </footer>
+
+    <script>
+        let selectedDuration = 15;
+        let timeLeft = 15;
+        let timer = null;
+        let sessionData = null;
+
+        const history = {
+            itemsPerGroup: [],
+            numGroups: [],
+            layout: []
+        };
+
+        const COLORS = ['#4F46E5', '#0891B2', '#059669', '#D97706', '#DB2777', '#7C3AED'];
+        const SHAPES = ['circle', 'square', 'hexagon', 'star'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        function setDuration(val) {
+            selectedDuration = val;
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                if(parseInt(btn.dataset.val) === val) {
+                    btn.className = "duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-orange-500 border-orange-600 text-white shadow-md transform scale-105";
+                } else {
+                    btn.className = "duration-btn px-6 py-3 rounded-2xl text-xl font-black transition-all border-2 bg-white border-orange-100 text-orange-400 hover:bg-orange-50";
+                }
+            });
+        }
+
+        function getSmartRandom(options, historyKey) {
+            let choice;
+            const h = history[historyKey];
+            if (h.length >= 2 && h[h.length-1] === h[h.length-2]) {
+                const filtered = options.filter(opt => opt !== h[h.length-1]);
+                choice = filtered[Math.floor(Math.random() * filtered.length)];
+            } else {
+                choice = options[Math.floor(Math.random() * options.length)];
+            }
+            h.push(choice);
+            if (h.length > 5) h.shift();
+            return choice;
+        }
+
+        function generateSession() {
+            const groupOptions = [2, 3, 4, 5, 6, 10];
+            const numGroupsOptions = [4, 5, 6, 7, 8, 9, 10];
+            const layouts = ['ROWS', 'COLS', 'CIRCLE', 'RANDOM'];
+
+            const itemsPerGroup = getSmartRandom(groupOptions, 'itemsPerGroup');
+            const numGroups = getSmartRandom(numGroupsOptions, 'numGroups');
+            const chosenLayout = getSmartRandom(layouts, 'layout');
+
+            const totalCount = numGroups * itemsPerGroup;
+            const shapeType = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+
+            const containerW = 800;
+            const containerH = 500;
+            
+            // Adjust size slightly to ensure it's not too crowded
+            const shapeSize = itemsPerGroup >= 10 ? 16 : totalCount > 40 ? 20 : 26;
+            
+            // המרווח בתוך הקבוצה הוגדל מעט ל-1.5 כדי למנוע דחיסות
+            const spacingInside = shapeSize * 1.5;
+            
+            // חישוב שטח שתופסת קבוצה בודדת
+            const groupW = (itemsPerGroup > 5 ? 5 : itemsPerGroup > 3 ? 3 : itemsPerGroup) * spacingInside;
+            const groupH = (itemsPerGroup > 5 ? 2 : itemsPerGroup > 3 ? 2 : 1) * spacingInside;
+
+            sessionData = {
+                itemsPerGroup, numGroups, totalCount, shapeType, color, shapeSize, chosenLayout, spacingInside,
+                groupPositions: generateLayoutPositions(numGroups, containerW, containerH, groupW, groupH, chosenLayout),
+                containerW, containerH, groupW, groupH
+            };
+        }
+
+        function generateLayoutPositions(numGroups, containerW, containerH, groupW, groupH, layout) {
+            const positions = [];
+            const margin = 60;
+            const innerW = containerW - margin * 2;
+            const innerH = containerH - margin * 2;
+
+            if (layout === 'ROWS' || layout === 'COLS') {
+                const rows = layout === 'ROWS' ? Math.ceil(Math.sqrt(numGroups * (innerH/innerW))) : Math.ceil(numGroups / Math.ceil(Math.sqrt(numGroups * (innerW/innerH))));
+                const cols = Math.ceil(numGroups / rows);
+                const cellW = innerW / cols;
+                const cellH = innerH / rows;
+                for (let i = 0; i < numGroups; i++) {
+                    const r = layout === 'ROWS' ? Math.floor(i / cols) : i % rows;
+                    const c = layout === 'ROWS' ? i % cols : Math.floor(i / rows);
+                    // שימוש ב-cellW/cellH מבטיח שכל קבוצה בתוך ה"תא" שלה ולא נוגעת באחרות
+                    positions.push({ x: margin + c * cellW + (cellW - groupW) / 2, y: margin + r * cellH + (cellH - groupH) / 2 });
+                }
+            } else if (layout === 'CIRCLE') {
+                const centerX = containerW / 2 - groupW / 2;
+                const centerY = containerH / 2 - groupH / 2;
+                const radius = Math.min(innerW, innerH) * 0.38;
+                for (let i = 0; i < numGroups; i++) {
+                    const angle = (i / numGroups) * Math.PI * 2;
+                    positions.push({ x: centerX + Math.cos(angle) * radius, y: centerY + Math.sin(angle) * radius });
+                }
+            } else { 
+                // RANDOM עם "מרווח בטחון" (Padding) כדי למנוע הידבקות קבוצות
+                const blocks = [
+                    {x: margin, y: margin, w: innerW/2, h: innerH/2},
+                    {x: margin + innerW/2, y: margin, w: innerW/2, h: innerH/2},
+                    {x: margin, y: margin + innerH/2, w: innerW/2, h: innerH/2},
+                    {x: margin + innerW/2, y: margin + innerH/2, w: innerW/2, h: innerH/2}
+                ];
+                
+                for (let i = 0; i < numGroups; i++) {
+                    const block = blocks[i % blocks.length];
+                    const subIdx = Math.floor(i / blocks.length);
+                    
+                    // הוספת מרווח הגנה (Padding) של לפחות 20 פיקסלים בין קבוצות בתוך המקבץ
+                    const padding = 25; 
+                    const safeX = (subIdx % 2 === 0 ? 0 : groupW + padding);
+                    const safeY = (Math.floor(subIdx/2) * (groupH + padding));
+
+                    positions.push({ 
+                        x: block.x + (block.w/6) + safeX,
+                        y: block.y + (block.h/6) + safeY
+                    });
+                }
+            }
+            return positions;
+        }
+
+        function generateGroupPoints(count, shapeSize, spacing) {
+            const points = [];
+            if (count === 2) {
+                points.push({x:0, y:0}, {x:spacing, y:0});
+            } else if (count === 3) {
+                points.push({x:0, y:spacing}, {x:spacing, y:0}, {x:spacing*2, y:spacing});
+            } else if (count === 4) {
+                points.push({x:0,y:0},{x:spacing,y:0},{x:0,y:spacing},{x:spacing,y:spacing});
+            } else if (count === 5) {
+                points.push({x:0,y:0},{x:spacing*2,y:0},{x:spacing,y:spacing},{x:0,y:spacing*2},{x:spacing*2,y:spacing*2});
+            } else if (count === 6) {
+                // 3x2 grid
+                points.push({x:0,y:0},{x:spacing,y:0},{x:spacing*2,y:0},{x:0,y:spacing},{x:spacing,y:spacing},{x:spacing*2,y:spacing});
+            } else if (count === 10) {
+                // 5x2 grid
+                for(let i=0; i<10; i++) points.push({ x: (i%5) * spacing, y: Math.floor(i/5) * spacing });
+            } else {
+                const cols = Math.ceil(Math.sqrt(count));
+                for (let i = 0; i < count; i++) points.push({ x: (i%cols)*spacing, y: Math.floor(i/cols)*spacing });
+            }
+            return points;
+        }
+
+        function createSVG(showLabel = false) {
+            const { shapeType, color, shapeSize, groupPositions, containerW, containerH, itemsPerGroup, chosenLayout, spacingInside } = sessionData;
+            const groupPoints = generateGroupPoints(itemsPerGroup, shapeSize, spacingInside);
+
+            let svgHtml = `<div class="relative w-full aspect-[16/10] bg-white rounded-2xl border-2 border-orange-100 shadow-inner flex items-center justify-center overflow-hidden">`;
+            if(showLabel) {
+                svgHtml += `<div class="absolute top-4 right-4 z-20 flex flex-col items-end gap-1">
+                    <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">פריסה: ${chosenLayout === 'RANDOM' ? 'מקבצים' : chosenLayout}</span>
+                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">קבוצות: ${sessionData.numGroups} של ${itemsPerGroup}</span>
+                </div>`;
+            }
+            svgHtml += `<svg viewBox="0 0 ${containerW} ${containerH}" class="w-full h-full p-2">`;
+            groupPositions.forEach((pos) => {
+                svgHtml += `<g transform="translate(${pos.x}, ${pos.y})">`;
+                groupPoints.forEach(p => {
+                    svgHtml += `<g transform="translate(${p.x}, ${p.y})">`;
+                    if(shapeType === 'square') svgHtml += `<rect fill="${color}" width="${shapeSize}" height="${shapeSize}" rx="4" />`;
+                    else if(shapeType === 'hexagon') {
+                        const s = shapeSize/50;
+                        svgHtml += `<polygon fill="${color}" points="25,2 48,13 48,37 25,48 2,37 2,13" transform="scale(${s})" />`;
+                    }
+                    else if(shapeType === 'star') {
+                        const s = shapeSize/50;
+                        svgHtml += `<polygon fill="${color}" points="25,2 31,18 48,18 35,29 40,46 25,36 10,46 15,29 2,18 19,18" transform="scale(${s})" />`;
+                    }
+                    else svgHtml += `<circle cx="${shapeSize/2}" cy="${shapeSize/2}" r="${shapeSize/2}" fill="${color}" />`;
+                    svgHtml += `</g>`;
+                });
+                svgHtml += `</g>`;
+            });
+            svgHtml += `</svg></div>`;
+            return svgHtml;
+        }
+
+        function hideAll() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('showingScreen').classList.add('hidden');
+            document.getElementById('askingScreen').classList.add('hidden');
+            document.getElementById('reviewScreen').classList.add('hidden');
+        }
+
+        function startGame() {
+            generateSession();
+            hideAll();
+            document.getElementById('showingScreen').classList.remove('hidden');
+            document.getElementById('canvasContainer').innerHTML = createSVG();
+            timeLeft = selectedDuration;
+            updateTimerUI();
+            if(timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+                if(timeLeft <= 0) {
+                    clearInterval(timer);
+                    showAsking();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            document.getElementById('timerText').innerText = timeLeft;
+            document.getElementById('progressBar').style.width = `${(timeLeft / selectedDuration) * 100}%`;
+        }
+
+        function showAsking() {
+            hideAll();
+            document.getElementById('askingScreen').classList.remove('hidden');
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+            document.getElementById('feedbackBox').classList.add('hidden');
+            document.getElementById('nextLevelBtn').classList.add('hidden');
+            document.getElementById('checkBtn').disabled = false;
+        }
+
+        function checkAnswer() {
+            const val = parseInt(document.getElementById('answerInput').value);
+            const feedbackBox = document.getElementById('feedbackBox');
+            feedbackBox.classList.remove('hidden');
+            if (isNaN(val)) {
+                feedbackBox.innerHTML = `<i data-lucide="alert-circle" class="w-8 h-8"></i><span class="text-xl font-black">יש להזין מספר.</span>`;
+                feedbackBox.className = "flex items-center gap-4 px-8 py-4 rounded-2xl border-2 bg-orange-100 border-orange-300 text-orange-800 shadow-lg animate-slide-up";
+            } else if (val === sessionData.totalCount) {
+                feedbackBox.innerHTML = `<i data-lucide="check-circle-2" class="w-8 h-8"></i><span class="text-xl font-black">כל הכבוד! ${sessionData.totalCount} זו התשובה הנכונה.</span>`;
+                feedbackBox.className = "flex items-center gap-4 px-8 py-4 rounded-2xl border-2 bg-green-100 border-green-300 text-green-800 shadow-lg animate-slide-up";
+                document.getElementById('nextLevelBtn').classList.remove('hidden');
+                document.getElementById('checkBtn').disabled = true;
+            } else {
+                feedbackBox.innerHTML = `<i data-lucide="alert-circle" class="w-8 h-8"></i><span class="text-xl font-black">לא מדויק. נסו שוב או הציגו את המערך.</span>`;
+                feedbackBox.className = "flex items-center gap-4 px-8 py-4 rounded-2xl border-2 bg-orange-100 border-orange-300 text-orange-800 shadow-lg animate-slide-up";
+            }
+            lucide.createIcons();
+        }
+
+        function reviewBoard() {
+            hideAll();
+            document.getElementById('reviewScreen').classList.remove('hidden');
+            document.getElementById('reviewCanvasContainer').innerHTML = createSVG(true);
+        }
+
+        function backToAsking() {
+            hideAll();
+            document.getElementById('askingScreen').classList.remove('hidden');
+        }
+
+        function resetToStart() {
+            if(timer) clearInterval(timer);
+            hideAll();
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+            else document.exitFullscreen();
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.querySelector('#fullscreenBtn i');
+            const span = document.querySelector('#fullscreenBtn span');
+            if (document.fullscreenElement) {
+                icon.setAttribute('data-lucide', 'minimize');
+                span.innerText = "יציאה";
+            } else {
+                icon.setAttribute('data-lucide', 'maximize');
+                span.innerText = "מסך מלא";
+            }
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
